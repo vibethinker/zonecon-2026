@@ -83,3 +83,46 @@ jobs:
           echo "### 🚀 Deployed!" >> $GITHUB_STEP_SUMMARY
           echo "**URL:** ${URL}" >> $GITHUB_STEP_SUMMARY
           echo "**Image:** \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
+
+      # ── 8. Delete old image versions (keep only latest) ───────────────────
+      - name: Clean up old images from Artifact Registry
+        # Runs even if previous steps fail so storage never bloats
+        if: always()
+        run: |
+          BASE="${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.REPO }}/${{ env.IMAGE }}"
+          CURRENT_SHA="${{ github.sha }}"
+
+          echo "Listing all image digests in Artifact Registry..."
+          # Get all digests for this image
+          ALL_DIGESTS=$(gcloud artifacts docker images list "${BASE}" \
+            --include-tags \
+            --format="get(digest)" \
+            --project=${{ env.PROJECT_ID }} 2>/dev/null | sort -u)
+
+          if [[ -z "$ALL_DIGESTS" ]]; then
+            echo "No images found — nothing to clean."
+            exit 0
+          fi
+
+          # Get the digest of the image we just pushed (the one tagged :latest)
+          CURRENT_DIGEST=$(gcloud artifacts docker images describe \
+            "${BASE}:latest" \
+            --format="get(image_summary.digest)" \
+            --project=${{ env.PROJECT_ID }} 2>/dev/null || true)
+
+          DELETED=0
+          for DIGEST in $ALL_DIGESTS; do
+            if [[ "$DIGEST" == "$CURRENT_DIGEST" ]]; then
+              echo "Keeping current image: ${DIGEST}"
+              continue
+            fi
+            echo "Deleting old image: ${DIGEST}"
+            gcloud artifacts docker images delete \
+              "${BASE}@${DIGEST}" \
+              --delete-tags \
+              --quiet \
+              --project=${{ env.PROJECT_ID }} 2>/dev/null && DELETED=$((DELETED + 1)) || true
+          done
+
+          echo "✅ Cleaned up ${DELETED} old image version(s)."
+          echo "### 🗑️ Cleanup: removed ${DELETED} old image(s)" >> $GITHUB_STEP_SUMMARY
