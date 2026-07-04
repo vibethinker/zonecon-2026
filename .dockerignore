@@ -1,0 +1,38 @@
+# Git
+.git
+.gitignore
+
+# Local dev / editor
+.vscode
+.idea
+*.local
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Dependencies — re-installed inside Docker
+node_modules
+
+# Build outputs — rebuilt inside Docker
+.output
+dist
+build
+
+# Logs
+logs
+*.log
+npm-debug.log*
+
+# Env secrets — never bake into image
+.env
+.env.*
+!.env.example
+
+# Dev/CI files not needed at runtime
+.prettierrc
+.prettierignore
+eslint.config.js
+*.md
+bun.lock
+bunfig.toml
