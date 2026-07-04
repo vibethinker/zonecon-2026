@@ -83,7 +83,7 @@ jobs:
             --min-instances=0 \
             --max-instances=3 \
             --allow-unauthenticated \
-            --set-env-vars="NODE_ENV=production,PORT=8080" \
+            --set-env-vars="NODE_ENV=production" \
             --project=${{ env.PROJECT_ID }} \
             --quiet
 
