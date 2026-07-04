@@ -82,10 +82,19 @@ jobs:
             --cpu=1 \
             --min-instances=0 \
             --max-instances=3 \
-            --allow-unauthenticated \
+            --no-allow-unauthenticated \
             --set-env-vars="NODE_ENV=production" \
             --project=${{ env.PROJECT_ID }} \
             --quiet
+
+      # ── 7. Make the service publicly accessible ───────────────────────────
+      - name: Allow public access (unauthenticated)
+        run: |
+          gcloud run services add-iam-policy-binding ${{ env.SERVICE_NAME }} \
+            --region=${{ env.REGION }} \
+            --member="allUsers" \
+            --role="roles/run.invoker" \
+            --project=${{ env.PROJECT_ID }}
 
       # ── 7. Print the live URL ─────────────────────────────────────────────
       - name: Get service URL
