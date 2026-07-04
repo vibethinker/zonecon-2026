@@ -39,7 +39,21 @@ jobs:
         with:
           project_id: ${{ env.PROJECT_ID }}
 
-      # ── 4. Configure Docker to push to Artifact Registry ─────────────────
+      # ── 4. Ensure Artifact Registry repo exists (creates it on first run) ───
+      - name: Create Artifact Registry repository (if needed)
+        run: |
+          gcloud artifacts repositories describe ${{ env.REPO }} \
+            --location=${{ env.REGION }} \
+            --project=${{ env.PROJECT_ID }} --quiet 2>/dev/null \
+          || gcloud artifacts repositories create ${{ env.REPO }} \
+            --repository-format=docker \
+            --location=${{ env.REGION }} \
+            --description="Cloud Run container images" \
+            --project=${{ env.PROJECT_ID }} \
+            --quiet
+          echo "✅ Artifact Registry repo ready"
+
+      # ── 5. Configure Docker to push to Artifact Registry ─────────────────
       - name: Configure Docker auth
         run: gcloud auth configure-docker ${{ env.REGISTRY }} --quiet
 
